@@ -40,22 +40,52 @@ void compileShader(GLuint shader, const std::string &filename)
 class Test
 {
     public:
-        void init()
+        void start()
         {
+            // make vao
+            glGenVertexArrays(1, &vao);
+            glBindVertexArray(vao);
+
+            // make vbo
             glGenBuffers(1, &vbo);
             glBindBuffer(GL_ARRAY_BUFFER, vbo);
             glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices,
                     GL_STATIC_DRAW);
 
+            // compile shaders
             vertexShader = glCreateShader(GL_VERTEX_SHADER);
             compileShader(vertexShader, "basic.vert");
-
             fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
             compileShader(fragmentShader, "basic.frag");
+
+            // link program
+            program = glCreateProgram();
+            glAttachShader(program, vertexShader);
+            glAttachShader(program, fragmentShader);
+            glBindFragDataLocation(program, 0, "outColor");
+            glLinkProgram(program);
+            glUseProgram(program);
+
+            // bind attributes
+            GLint posAttrib = glGetAttribLocation(program, "pos");
+            glEnableVertexAttribArray(posAttrib);
+            glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+        }
+
+        void stop()
+        {
+            glDeleteProgram(program);
+            glDeleteShader(fragmentShader);
+            glDeleteShader(vertexShader);
+
+            glDeleteBuffers(1, &vbo);
+
+            glDeleteVertexArrays(1, &vao);
         }
 
         void draw()
         {
+            glDrawArrays(GL_TRIANGLES, 0, 3);
         }
 
     private:
@@ -67,8 +97,11 @@ class Test
 
         GLuint vbo;
 
+        GLuint vao;
+
         GLuint vertexShader;
         GLuint fragmentShader;
+        GLuint program;
 };
 
 // ----------------------------------------------------------------------------
@@ -90,11 +123,13 @@ class Game
             glewExperimental = GL_TRUE;
             glewInit();
 
-            test_.init();
+            test_.start();
         }
 
         void stop()
         {
+            test_.stop();
+
             SDL_GL_DeleteContext(context);
             SDL_Quit();
         }
@@ -139,6 +174,12 @@ class Game
 
         void draw()
         {
+            glClearColor(0.f, 0.f, 0.f, 1.f);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            test_.draw();
+
+            SDL_GL_SwapWindow(window);
         }
 
     private:
