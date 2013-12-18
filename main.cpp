@@ -67,7 +67,7 @@ class Test
             glUseProgram(program);
 
             // bind attributes
-            GLint posAttrib = glGetAttribLocation(program, "pos");
+            GLint posAttrib = glGetAttribLocation(program, "position");
             glEnableVertexAttribArray(posAttrib);
             glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
         }
@@ -122,6 +122,8 @@ class Game
 
             glewExperimental = GL_TRUE;
             glewInit();
+            glGetError(); // ignore GL_INVALID_ENUM after glewInit(), see
+                          // http://www.opengl.org/wiki/OpenGL_Loading_Library
 
             test_.start();
         }
