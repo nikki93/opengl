@@ -49,6 +49,9 @@ class Test
 
             vertexShader = glCreateShader(GL_VERTEX_SHADER);
             compileShader(vertexShader, "basic.vert");
+
+            fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+            compileShader(fragmentShader, "basic.frag");
         }
 
         void draw()
