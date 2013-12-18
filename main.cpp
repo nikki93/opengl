@@ -14,18 +14,13 @@ void compileShader(GLuint shader, const std::string &filename)
 {
     LOG << "compiling shader '" << filename << "' ... ";
 
-    // find file size
+    // read entire file
     std::ifstream in { filename };
-    in.seekg(0, std::fstream::end);
-    int n = in.tellg();
-
-    // read it all
-    auto buf = new char[n + 1];
-    in.seekg(0, std::fstream::beg);
-    in.read(buf, n);
+    std::string contents((std::istreambuf_iterator<char>(in)),
+            std::istreambuf_iterator<char>());
 
     // glShaderSource(...)
-    auto source = (const GLchar *) buf;
+    auto source = (const GLchar *) contents.c_str();
     glShaderSource(shader, 1, &source, NULL);
 
     // glCompileShader(...)
@@ -38,8 +33,6 @@ void compileShader(GLuint shader, const std::string &filename)
     char log[512];
     glGetShaderInfoLog(shader, 512, NULL, log);
     LOG << log << std::endl;
-
-    delete buf;
 }
 
 // ----------------------------------------------------------------------------
