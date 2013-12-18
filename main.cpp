@@ -2,8 +2,9 @@
 #include <fstream>
 #include <iostream>
 
-#include <SFML/Window.hpp>
 #include <GL/glew.h>
+#include <SDL.h>
+#include <SDL_opengl.h>
 
 #define LOG std::cout
 
@@ -79,59 +80,60 @@ class Test
 class Game
 {
     public:
-        Game() : 
-            window_(sf::VideoMode(800, 600), "open.gl", sf::Style::Close)
+        void start()
         {
+            SDL_Init(SDL_INIT_VIDEO);
+            window = SDL_CreateWindow("open.gl", 100, 100, 800, 600,
+                    SDL_WINDOW_OPENGL);
+            context = SDL_GL_CreateContext(window);
+
             glewExperimental = GL_TRUE;
             glewInit();
 
             test_.init();
         }
 
-        void run()
+        void stop()
         {
-            sf::Clock clock;
-            auto lastUpdate = sf::Time::Zero;
-
-            // main loop!
-            while (window_.isOpen())
-            {
-                processEvents();
-
-                // possibly update many times to stay regular
-                lastUpdate += clock.restart();
-                while (lastUpdate > updatePeriod_)
-                {
-                    lastUpdate -= updatePeriod_;
-                    processEvents();
-                    update(updatePeriod_);
-                }
-
-                draw();
-            }
+            SDL_GL_DeleteContext(context);
+            SDL_Quit();
         }
 
-        void processEvents()
+        void run()
         {
-            sf::Event event;
-            while (window_.pollEvent(event))
+            start();
+
+            while (processEvents())
+            {
+                update(0.1);
+                draw();
+            }
+
+            stop();
+        }
+
+        bool processEvents()
+        {
+            SDL_Event event;
+            while (SDL_PollEvent(&event))
                 switch (event.type)
                 {
-                    case sf::Event::Closed:
-                        window_.close();
-                        break;
+                    case SDL_QUIT:
+                        return false;
 
-                    case sf::Event::KeyPressed:
-                        if (event.key.code == sf::Keyboard::Escape)
-                            window_.close();
+                    case SDL_KEYUP:
+                        if (event.key.keysym.sym == SDLK_ESCAPE)
+                            return false;
                         break;
 
                     default:
                         break;
                 }
+
+            return true;
         }
 
-        void update(sf::Time dt)
+        void update(float dt)
         {
         }
 
@@ -140,8 +142,9 @@ class Game
         }
 
     private:
-        sf::Window window_;
-        const sf::Time updatePeriod_ { sf::seconds(1.f / 60.f) };
+        SDL_Window *window;
+        SDL_GLContext context;
+
         Test test_;
 };
 

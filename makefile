@@ -1,8 +1,7 @@
 CXX?=clang++
 LINKER=clang++
-CFLAGS?=-g -std=c++11 -DGLEW_STATIC
-LDFLAGS?=-g -std=c++11 -lsfml-graphics -lsfml-window -lsfml-system \
-	 -lGLEW -DGLEW_STATIC
+CFLAGS?=-g -std=c++11 -I/usr/local/include/SDL2 -DGLEW_STATIC
+LDFLAGS?=-g -std=c++11 -lSDL2 -lSDL2main -lGLEW -DGLEW_STATIC
 
 all: open.gl
 
