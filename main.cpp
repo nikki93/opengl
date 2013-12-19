@@ -1,6 +1,7 @@
 #include <string>
 #include <fstream>
 #include <iostream>
+#include <vector>
 
 #include <GL/glew.h>
 #include <SDL.h>
@@ -36,13 +37,44 @@ void compileShader(GLuint shader, const std::string &filename)
     LOG << log << std::endl;
 }
 
+// glBufferData(...) on an std::vector<...>
+template <class T>
+inline void bufferData(GLenum target, const std::vector<T> &v, GLenum usage)
+{
+    glBufferData(target, v.size() * sizeof(T), &v[0], usage);
+}
+
 // ----------------------------------------------------------------------------
 
 class Test
 {
+    protected:
+        // our test sprites
+
     public:
         void start()
         {
+            // command quad mesh
+            quadVertices = {
+                0.5f,  0.5f,
+                0.5f, -0.5f,
+               -0.5f, -0.5f,
+               -0.5f,  0.5f,
+            };
+            quadElements = {
+                0, 1, 2,
+                2, 3, 0,
+            };
+
+            // sprite data table
+            sprites = {
+                //  position        atlas cell (uv)  size (uv)
+                    0.0f,  0.0f,    0.0f, 0.5f,      0.5f, 0.5f,
+                    2.0f,  0.0f,    0.5f, 0.5f,      0.5f, 0.5f,
+                    0.0f,  5.0f,    0.5f, 0.5f,      0.5f, 0.5f,
+                   -1.0f, -3.0f,    0.5f, 0.5f,      0.5f, 0.5f,
+            };
+
             // compile shaders
             vertexShader = glCreateShader(GL_VERTEX_SHADER);
             compileShader(vertexShader, "basic.vert");
@@ -59,33 +91,9 @@ class Test
 
             // get attribute locations
             GLint vertAttrib = glGetAttribLocation(program, "vertex");
-            GLint colAttrib = glGetAttribLocation(program, "color");
-            GLint texAttrib = glGetAttribLocation(program, "texcoord");
             GLint posAttrib = glGetAttribLocation(program, "position");
-
-            // arrays
-
-            static float vertices[] {
-                //  x      y      r     g     b      s     t
-                 0.5f,  0.5f,  0.8f, 0.5f, 0.1f,  1.0f, 1.0f,
-                 0.5f, -0.5f,  1.0f, 0.0f, 0.0f,  1.0f, 0.0f,
-                -0.5f, -0.5f,  0.0f, 1.0f, 0.0f,  0.0f, 0.0f,
-                -0.5f,  0.5f,  0.0f, 0.0f, 1.0f,  0.0f, 1.0f,
-            };
-
-            static GLuint elements[] {
-                0, 1, 2,
-                2, 3, 0,
-            };
-
-            static float positions[] {
-                //  x      y
-                 0.0f,  0.0f,
-                 2.0f,  0.0f,
-                 0.0f,  5.0f,
-                -1.0f, -3.0f,
-            };
-
+            GLint cellAttrib = glGetAttribLocation(program, "cell");
+            GLint sizeAttrib = glGetAttribLocation(program, "size");
 
             // make vao
             glGenVertexArrays(1, &vao);
@@ -94,32 +102,31 @@ class Test
             // make vbo, bind vbo attributes
             glGenBuffers(1, &vbo);
             glBindBuffer(GL_ARRAY_BUFFER, vbo);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices,
-                    GL_STATIC_DRAW);
-            glVertexAttribPointer(vertAttrib, 2, GL_FLOAT, GL_FALSE,
-                    7 * sizeof(float), 0);
+            bufferData(GL_ARRAY_BUFFER, quadVertices, GL_STATIC_DRAW);
+            glVertexAttribPointer(vertAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
             glEnableVertexAttribArray(vertAttrib);
-            glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE,
-                    7 * sizeof(float), (void *) (2 * sizeof(float)));
-            glEnableVertexAttribArray(colAttrib);
-            glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE,
-                    7 * sizeof(float), (void *) (5 * sizeof(float)));
-            glEnableVertexAttribArray(texAttrib);
 
             // make ibo, bind ibo attributes
             glGenBuffers(1, &ibo);
             glBindBuffer(GL_ARRAY_BUFFER, ibo);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(positions), positions,
-                    GL_STATIC_DRAW);
-            glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+            bufferData(GL_ARRAY_BUFFER, sprites, GL_DYNAMIC_DRAW);
+            glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE,
+                    6 * sizeof(float), 0);
             glEnableVertexAttribArray(posAttrib);
             glVertexAttribDivisor(posAttrib, 1);
+            glVertexAttribPointer(cellAttrib, 2, GL_FLOAT, GL_FALSE,
+                    6 * sizeof(float), (void *) (2 * sizeof(float)));
+            glEnableVertexAttribArray(cellAttrib);
+            glVertexAttribDivisor(cellAttrib, 1);
+            glVertexAttribPointer(sizeAttrib, 2, GL_FLOAT, GL_FALSE,
+                    6 * sizeof(float), (void *) (4 * sizeof(float)));
+            glEnableVertexAttribArray(sizeAttrib);
+            glVertexAttribDivisor(sizeAttrib, 1);
 
             // make ebo
             glGenBuffers(1, &ebo);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements,
-                    GL_STATIC_DRAW);
+            bufferData(GL_ELEMENT_ARRAY_BUFFER, quadElements, GL_STATIC_DRAW);
 
             // set texture
             glGenTextures(1, tex);
@@ -128,7 +135,7 @@ class Test
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             FIBITMAP *img = FreeImage_ConvertTo32Bits(FreeImage_Load(
-                        FreeImage_GetFileType("dude.png"), "dude.png"));
+                        FreeImage_GetFileType("atlas.png"), "atlas.png"));
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                     FreeImage_GetWidth(img), FreeImage_GetHeight(img),
                     0, GL_BGRA, GL_UNSIGNED_BYTE, FreeImage_GetBits(img));
@@ -143,8 +150,17 @@ class Test
             glDeleteShader(fragmentShader);
             glDeleteShader(vertexShader);
             glDeleteBuffers(1, &ebo);
+            glDeleteBuffers(1, &ibo);
             glDeleteBuffers(1, &vbo);
             glDeleteVertexArrays(1, &vao);
+        }
+
+        void update(float dt)
+        {
+            sprites[0] += dt;
+
+            glBindBuffer(GL_ARRAY_BUFFER, ibo);
+            bufferData(GL_ARRAY_BUFFER, sprites, GL_DYNAMIC_DRAW);
         }
 
         void draw()
@@ -157,6 +173,10 @@ class Test
         GLuint vbo;
         GLuint ibo;
         GLuint ebo;
+
+        std::vector<float> quadVertices;
+        std::vector<GLuint> quadElements;
+        std::vector<float> sprites;
 
         GLuint tex[1];
 
@@ -191,9 +211,8 @@ class Game
                           // http://www.opengl.org/wiki/OpenGL_Loading_Library
 
             // some GL settings
-            glEnable(GL_TEXTURE_2D);
             glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glDisable(GL_DEPTH_TEST);
 
             test_.start();
@@ -243,6 +262,7 @@ class Game
 
         void update(float dt)
         {
+            test_.update(dt);
         }
 
         void draw()

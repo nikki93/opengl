@@ -1,11 +1,10 @@
 #version 150
 
-in vec3 color_;
 in vec2 texcoord_;
 
-out vec4 outColor;
-
 uniform sampler2D tex0;
+
+out vec4 outColor;
 
 void main()
 {
