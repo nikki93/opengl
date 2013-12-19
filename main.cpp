@@ -44,11 +44,11 @@ class Test
         {
             // arrays
             static float vertices[] {
-                //  x      y     r     g     b
-                 0.5f,  0.5f, 0.8f, 0.5f, 0.1f,
-                 0.5f, -0.5f, 1.0f, 0.0f, 0.0f,
-                -0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-                -0.5f,  0.5f, 0.0f, 0.0f, 1.0f,
+                //  x      y  gray
+                 0.5f,  0.5f, 0.2f,
+                 0.5f, -0.5f, 0.4f,
+                -0.5f, -0.5f, 0.6f,
+                -0.5f,  0.5f, 0.8f,
             };
 
             static GLuint elements[] {
@@ -90,13 +90,13 @@ class Test
             GLint posAttrib = glGetAttribLocation(program, "position");
             glEnableVertexAttribArray(posAttrib);
             glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE,
-                    5 * sizeof(float), 0);
+                    3 * sizeof(float), 0);
 
             // bind color attribute
-            GLint colAttrib = glGetAttribLocation(program, "color");
-            glEnableVertexAttribArray(colAttrib);
-            glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE,
-                    5 * sizeof(float), (void *) (2 * sizeof(float)));
+            GLint grayAttrib = glGetAttribLocation(program, "gray");
+            glEnableVertexAttribArray(grayAttrib);
+            glVertexAttribPointer(grayAttrib, 3, GL_FLOAT, GL_FALSE,
+                    3 * sizeof(float), (void *) (2 * sizeof(float)));
         }
 
         void stop()
