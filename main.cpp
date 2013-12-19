@@ -42,6 +42,20 @@ class Test
     public:
         void start()
         {
+            // arrays
+            static float vertices[] {
+                //  x      y     r     g     b
+                 0.5f,  0.5f, 0.8f, 0.5f, 0.1f,
+                 0.5f, -0.5f, 1.0f, 0.0f, 0.0f,
+                -0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+                -0.5f,  0.5f, 0.0f, 0.0f, 1.0f,
+            };
+
+            static GLuint elements[] {
+                0, 1, 2,
+                2, 3, 0,
+            };
+
             // make vao
             glGenVertexArrays(1, &vao);
             glBindVertexArray(vao);
@@ -50,6 +64,12 @@ class Test
             glGenBuffers(1, &vbo);
             glBindBuffer(GL_ARRAY_BUFFER, vbo);
             glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices,
+                    GL_STATIC_DRAW);
+
+            // make ebo
+            glGenBuffers(1, &ebo);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements,
                     GL_STATIC_DRAW);
 
             // compile shaders
@@ -85,26 +105,20 @@ class Test
             glDeleteProgram(program);
             glDeleteShader(fragmentShader);
             glDeleteShader(vertexShader);
+            glDeleteBuffers(1, &ebo);
             glDeleteBuffers(1, &vbo);
             glDeleteVertexArrays(1, &vao);
         }
 
         void draw()
         {
-            glDrawArrays(GL_TRIANGLES, 0, 3);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         }
 
     private:
-        float vertices[15] {
-            //  x      y     r     g     b
-             0.0f,  0.5f, 1.0f, 0.0f, 0.0f,
-             0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-            -0.5f, -0.5f, 0.0f, 0.0f, 1.0f,
-        };
-
-        GLuint vbo;
-
         GLuint vao;
+        GLuint vbo;
+        GLuint ebo;
 
         GLuint vertexShader;
         GLuint fragmentShader;
