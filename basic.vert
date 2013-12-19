@@ -12,7 +12,7 @@ void main()
 {
     // texcoord
     vec2 uv = vertex + vec2(0.5, 0.5);
-    texcoord_ = vec2(cell + size * uv);
+    texcoord_ = cell + size * uv;
 
     // world vertex position
     vec2 worldPos = position + vertex;
