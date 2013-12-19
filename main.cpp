@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <random>
+#include <chrono>
 
 #include <GL/glew.h>
 #include <SDL.h>
@@ -262,12 +263,40 @@ class Game
 
         void run()
         {
+            const std::chrono::duration<float> period { 1.f / 60.f };
+
             start();
 
+            int frames = 0;
+            auto lastTicks = std::chrono::system_clock::now();
+            auto fps = std::chrono::system_clock::now();
+            std::chrono::duration<float> elapsed { 0 };
             while (processEvents())
             {
-                update(0.1);
+                auto ticks = std::chrono::system_clock::now();
+                std::chrono::duration<float> interval { ticks - lastTicks };
+
+                elapsed += interval;
+                while (elapsed > period)
+                {
+                    update(period.count());
+                    elapsed -= period;
+                }
+
+                lastTicks = ticks;
+
+                if (ticks - fps >= std::chrono::duration<float>(5))
+                {
+                    LOG << "fps: " << (((float) frames) /
+                            std::chrono::duration<float>(ticks - fps).count())
+                        << std::endl;
+                    fps = std::chrono::system_clock::now();
+                    frames = 0;
+                }
+
                 draw();
+
+                ++frames;
             }
 
             stop();

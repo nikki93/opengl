@@ -16,6 +16,6 @@ void main()
 
     // world vertex position
     vec2 worldPos = position + vertex;
-    gl_Position = vec4(worldPos.x * 0.08, worldPos.y * 0.10666666667, 0.0, 1.0);
+    gl_Position = vec4(worldPos * vec2(0.08, 0.1066666667), 0.0, 1.0);
 }
 
