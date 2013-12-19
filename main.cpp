@@ -73,37 +73,6 @@ class Test
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements,
                     GL_STATIC_DRAW);
 
-            // make texture
-            glGenTextures(2, tex);
-
-            LOG << tex[0] << " " << tex[1] << std::endl;
-
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, tex[0]);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            FIBITMAP *img = FreeImage_ConvertTo32Bits(FreeImage_Load(
-                        FreeImage_GetFileType("dude.png"), "dude.png"));
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-                    FreeImage_GetWidth(img), FreeImage_GetHeight(img),
-                    0, GL_BGRA, GL_UNSIGNED_BYTE, FreeImage_GetBits(img));
-            FreeImage_Unload(img);
-            glUniform1i(glGetUniformLocation(program, "tex0"), 0);
-
-            LOG << glGetError();
-
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, tex[1]);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            img = FreeImage_ConvertTo32Bits(FreeImage_Load(
-                        FreeImage_GetFileType("glasses.png"), "glasses.png"));
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-                    FreeImage_GetWidth(img), FreeImage_GetHeight(img),
-                    0, GL_BGRA, GL_UNSIGNED_BYTE, FreeImage_GetBits(img));
-            FreeImage_Unload(img);
-            glUniform1i(glGetUniformLocation(program, "tex1"), 1);
-
             // compile shaders
             vertexShader = glCreateShader(GL_VERTEX_SHADER);
             compileShader(vertexShader, "basic.vert");
@@ -135,6 +104,33 @@ class Test
             glEnableVertexAttribArray(texAttrib);
             glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE,
                     7 * sizeof(float), (void *) (5 * sizeof(float)));
+
+            // make textures
+            glGenTextures(2, tex);
+
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, tex[0]);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            FIBITMAP *img = FreeImage_ConvertTo32Bits(FreeImage_Load(
+                        FreeImage_GetFileType("dude.png"), "dude.png"));
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                    FreeImage_GetWidth(img), FreeImage_GetHeight(img),
+                    0, GL_BGRA, GL_UNSIGNED_BYTE, FreeImage_GetBits(img));
+            FreeImage_Unload(img);
+            glUniform1i(glGetUniformLocation(program, "tex0"), 0);
+
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, tex[1]);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            img = FreeImage_ConvertTo32Bits(FreeImage_Load(
+                        FreeImage_GetFileType("glasses.png"), "glasses.png"));
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                    FreeImage_GetWidth(img), FreeImage_GetHeight(img),
+                    0, GL_BGRA, GL_UNSIGNED_BYTE, FreeImage_GetBits(img));
+            FreeImage_Unload(img);
+            glUniform1i(glGetUniformLocation(program, "tex1"), 1);
         }
 
         void stop()
