@@ -85,9 +85,12 @@ class Test
 
         void draw()
         {
+            // varying color color
             float time = (float) clock() / (float) CLOCKS_PER_SEC;
             glUniform3f(glGetUniformLocation(program, "triangleColor"),
                     (sin(time * 200.0f) + 1.0f) / 2.0f, 0.0f, 0.0f);
+
+            // draw!
             glDrawArrays(GL_TRIANGLES, 0, 3);
         }
 
@@ -114,15 +117,19 @@ class Game
     public:
         void start()
         {
+            // initialize SDL, force core profile
             SDL_Init(SDL_INIT_VIDEO);
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
                     SDL_GL_CONTEXT_PROFILE_CORE);
+
+            // create window and GL context
             window = SDL_CreateWindow("open.gl", 100, 100, 800, 600,
                     SDL_WINDOW_OPENGL);
             context = SDL_GL_CreateContext(window);
 
+            // initialize GLEW
             glewExperimental = GL_TRUE;
             glewInit();
             glGetError(); // ignore GL_INVALID_ENUM after glewInit(), see
