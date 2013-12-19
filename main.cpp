@@ -5,6 +5,7 @@
 #include <GL/glew.h>
 #include <SDL.h>
 #include <SDL_opengl.h>
+#include <Freeimage.h>
 
 #define LOG std::cout
 
@@ -44,11 +45,11 @@ class Test
         {
             // arrays
             static float vertices[] {
-                //  x      y     r     g     b
-                 0.5f,  0.5f, 0.8f, 0.5f, 0.1f,
-                 0.5f, -0.5f, 1.0f, 0.0f, 0.0f,
-                -0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-                -0.5f,  0.5f, 0.0f, 0.0f, 1.0f,
+                //  x      y      r     g     b      s     t
+                 0.5f,  0.5f,  0.8f, 0.5f, 0.1f,  1.0f, 1.0f,
+                 0.5f, -0.5f,  1.0f, 0.0f, 0.0f,  1.0f, 0.0f,
+                -0.5f, -0.5f,  0.0f, 1.0f, 0.0f,  0.0f, 0.0f,
+                -0.5f,  0.5f,  0.0f, 0.0f, 1.0f,  0.0f, 1.0f,
             };
 
             static GLuint elements[] {
@@ -72,6 +73,37 @@ class Test
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements,
                     GL_STATIC_DRAW);
 
+            // make texture
+            glGenTextures(2, tex);
+
+            LOG << tex[0] << " " << tex[1] << std::endl;
+
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, tex[0]);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            FIBITMAP *img = FreeImage_ConvertTo32Bits(FreeImage_Load(
+                        FreeImage_GetFileType("dude.png"), "dude.png"));
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                    FreeImage_GetWidth(img), FreeImage_GetHeight(img),
+                    0, GL_BGRA, GL_UNSIGNED_BYTE, FreeImage_GetBits(img));
+            FreeImage_Unload(img);
+            glUniform1i(glGetUniformLocation(program, "tex0"), 0);
+
+            LOG << glGetError();
+
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, tex[1]);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            img = FreeImage_ConvertTo32Bits(FreeImage_Load(
+                        FreeImage_GetFileType("glasses.png"), "glasses.png"));
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                    FreeImage_GetWidth(img), FreeImage_GetHeight(img),
+                    0, GL_BGRA, GL_UNSIGNED_BYTE, FreeImage_GetBits(img));
+            FreeImage_Unload(img);
+            glUniform1i(glGetUniformLocation(program, "tex1"), 1);
+
             // compile shaders
             vertexShader = glCreateShader(GL_VERTEX_SHADER);
             compileShader(vertexShader, "basic.vert");
@@ -90,13 +122,19 @@ class Test
             GLint posAttrib = glGetAttribLocation(program, "position");
             glEnableVertexAttribArray(posAttrib);
             glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE,
-                    5 * sizeof(float), 0);
+                    7 * sizeof(float), 0);
 
             // bind color attribute
             GLint colAttrib = glGetAttribLocation(program, "color");
             glEnableVertexAttribArray(colAttrib);
             glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE,
-                    5 * sizeof(float), (void *) (2 * sizeof(float)));
+                    7 * sizeof(float), (void *) (2 * sizeof(float)));
+
+            // bind texcoord attribute
+            GLint texAttrib = glGetAttribLocation(program, "texcoord");
+            glEnableVertexAttribArray(texAttrib);
+            glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE,
+                    7 * sizeof(float), (void *) (5 * sizeof(float)));
         }
 
         void stop()
@@ -119,6 +157,8 @@ class Test
         GLuint vao;
         GLuint vbo;
         GLuint ebo;
+
+        GLuint tex[2];
 
         GLuint vertexShader;
         GLuint fragmentShader;
