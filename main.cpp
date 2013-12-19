@@ -66,39 +66,40 @@ class Test
             glLinkProgram(program);
             glUseProgram(program);
 
-            // bind attributes
+            // bind position attribute
             GLint posAttrib = glGetAttribLocation(program, "position");
             glEnableVertexAttribArray(posAttrib);
-            glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+            glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE,
+                    5 * sizeof(float), 0);
+
+            // bind color attribute
+            GLint colAttrib = glGetAttribLocation(program, "color");
+            glEnableVertexAttribArray(colAttrib);
+            glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE,
+                    5 * sizeof(float), (void *) (2 * sizeof(float)));
         }
 
         void stop()
         {
+            // delete in reverse order
             glDeleteProgram(program);
             glDeleteShader(fragmentShader);
             glDeleteShader(vertexShader);
-
             glDeleteBuffers(1, &vbo);
-
             glDeleteVertexArrays(1, &vao);
         }
 
         void draw()
         {
-            // varying color color
-            float time = (float) clock() / (float) CLOCKS_PER_SEC;
-            glUniform3f(glGetUniformLocation(program, "triangleColor"),
-                    (sin(time * 200.0f) + 1.0f) / 2.0f, 0.0f, 0.0f);
-
-            // draw!
             glDrawArrays(GL_TRIANGLES, 0, 3);
         }
 
     private:
-        float vertices[6] {
-            0.0f, 0.5f,
-            0.5f, -0.5f,
-            -0.5f, -0.5f
+        float vertices[15] {
+            //  x      y     r     g     b
+             0.0f,  0.5f, 1.0f, 0.0f, 0.0f,
+             0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+            -0.5f, -0.5f, 0.0f, 0.0f, 1.0f,
         };
 
         GLuint vbo;
