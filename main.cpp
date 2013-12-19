@@ -85,6 +85,9 @@ class Test
 
         void draw()
         {
+            float time = (float) clock() / (float) CLOCKS_PER_SEC;
+            glUniform3f(glGetUniformLocation(program, "triangleColor"),
+                    (sin(time * 200.0f) + 1.0f) / 2.0f, 0.0f, 0.0f);
             glDrawArrays(GL_TRIANGLES, 0, 3);
         }
 
