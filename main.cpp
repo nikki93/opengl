@@ -106,7 +106,7 @@ class Test
                     7 * sizeof(float), (void *) (5 * sizeof(float)));
 
             // make textures
-            glGenTextures(2, tex);
+            glGenTextures(1, tex);
 
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, tex[0]);
@@ -119,18 +119,6 @@ class Test
                     0, GL_BGRA, GL_UNSIGNED_BYTE, FreeImage_GetBits(img));
             FreeImage_Unload(img);
             glUniform1i(glGetUniformLocation(program, "tex0"), 0);
-
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, tex[1]);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            img = FreeImage_ConvertTo32Bits(FreeImage_Load(
-                        FreeImage_GetFileType("glasses.png"), "glasses.png"));
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-                    FreeImage_GetWidth(img), FreeImage_GetHeight(img),
-                    0, GL_BGRA, GL_UNSIGNED_BYTE, FreeImage_GetBits(img));
-            FreeImage_Unload(img);
-            glUniform1i(glGetUniformLocation(program, "tex1"), 1);
         }
 
         void stop()
@@ -154,7 +142,7 @@ class Test
         GLuint vbo;
         GLuint ebo;
 
-        GLuint tex[2];
+        GLuint tex[1];
 
         GLuint vertexShader;
         GLuint fragmentShader;
@@ -185,6 +173,12 @@ class Game
             glewInit();
             glGetError(); // ignore GL_INVALID_ENUM after glewInit(), see
                           // http://www.opengl.org/wiki/OpenGL_Loading_Library
+
+            // some GL settings
+            glEnable(GL_TEXTURE_2D);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+            glDisable(GL_DEPTH_TEST);
 
             test_.start();
         }
@@ -237,7 +231,7 @@ class Game
 
         void draw()
         {
-            glClearColor(0.f, 0.f, 0.f, 1.f);
+            glClearColor(1.f, 1.f, 1.f, 1.f);
             glClear(GL_COLOR_BUFFER_BIT);
 
             test_.draw();

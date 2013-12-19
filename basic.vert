@@ -12,6 +12,6 @@ void main()
     texcoord_ = texcoord;
     color_ = color;
 
-    gl_Position = vec4(position, 0.0, 1.0);
+    gl_Position = vec4(position.x * 0.08, position.y * 0.10666666667, 0.0, 1.0);
 }
 
