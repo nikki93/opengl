@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <random>
 
 #include <GL/glew.h>
 #include <SDL.h>
@@ -12,6 +13,7 @@
 
 // ----------------------------------------------------------------------------
 
+// compile a shader from a file and output a log
 void compileShader(GLuint shader, const std::string &filename)
 {
     LOG << "compiling shader '" << filename << "' ... ";
@@ -37,7 +39,7 @@ void compileShader(GLuint shader, const std::string &filename)
     LOG << log << std::endl;
 }
 
-// glBufferData(...) on an std::vector<...>
+// do glBufferData(...) on an std::vector<...>
 template <class T>
 inline void bufferData(GLenum target, const std::vector<T> &v, GLenum usage)
 {
@@ -48,13 +50,12 @@ inline void bufferData(GLenum target, const std::vector<T> &v, GLenum usage)
 
 class Test
 {
-    protected:
-        // our test sprites
+    const unsigned int num_sprites = 100000;   // put a big number here!
 
     public:
         void start()
         {
-            // command quad mesh
+            // common quad mesh
             quadVertices = {
                 0.5f,  0.5f,
                 0.5f, -0.5f,
@@ -66,14 +67,35 @@ class Test
                 2, 3, 0,
             };
 
-            // sprite data table
-            sprites = {
-                //  position        atlas cell (uv)  size (uv)
-                    0.0f,  0.0f,    0.0f, 0.5f,      0.5f, 0.5f,
-                    2.0f,  0.0f,    0.5f, 0.5f,      0.5f, 0.5f,
-                    0.0f,  5.0f,    0.5f, 0.5f,      0.5f, 0.5f,
-                   -1.0f, -3.0f,    0.5f, 0.5f,      0.5f, 0.5f,
-            };
+            // sprite data -- each row must have x, y position, atlas cell
+            // u, v position and u, v size in atlas
+
+            std::random_device rd;
+            std::mt19937 rng(rd());
+            rng.seed(42);
+            std::uniform_real_distribution<> dist(-1, 1);
+
+            for (int i = 0; i < num_sprites; ++i)
+            {
+                // choose random position, atlas cell -- sprite size is always
+                // 0.5 x 0.5 size (in uv)
+
+                float x = 11 * dist(rng), y = 8 * dist(rng),
+                      cx = dist(rng) < 0.5 ? 0.0f : 0.5f, cy = 0.5f,
+                      sx = 0.5f, sy = 0.5f;
+
+                if (dist(rng) < 0.5)
+                {
+                    cx += 0.5f;
+                    sx *= -1.f;
+                }
+
+                sprites.insert(sprites.end(), { x, y, cx, cy, sx, sy });
+
+                // also velocity
+                velocities.push_back(std::make_pair(2 * dist(rng),
+                            2 * dist(rng)));
+            }
 
             // compile shaders
             vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -157,15 +179,25 @@ class Test
 
         void update(float dt)
         {
-            sprites[0] += dt;
+            // move 'em around a little bit
+            for (int i = 0; i < num_sprites; ++i)
+            {
+                sprites[6 * i]     += velocities[i].first * dt;
+                sprites[6 * i + 1] += velocities[i].second * dt;
 
-            glBindBuffer(GL_ARRAY_BUFFER, ibo);
-            bufferData(GL_ARRAY_BUFFER, sprites, GL_DYNAMIC_DRAW);
+                if (abs(sprites[6 * i]) > 12)
+                    sprites[6 * i] = 0;
+                if (abs(sprites[6 * i + 1]) > 9)
+                    sprites[6 * i + 1] = 0;
+            }
         }
 
         void draw()
         {
-            glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, 4);
+            glBindBuffer(GL_ARRAY_BUFFER, ibo);
+            bufferData(GL_ARRAY_BUFFER, sprites, GL_DYNAMIC_DRAW);
+            glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0,
+                    num_sprites);
         }
 
     private:
@@ -177,6 +209,8 @@ class Test
         std::vector<float> quadVertices;
         std::vector<GLuint> quadElements;
         std::vector<float> sprites;
+
+        std::vector<std::pair<float, float>> velocities;
 
         GLuint tex[1];
 
@@ -200,7 +234,7 @@ class Game
                     SDL_GL_CONTEXT_PROFILE_CORE);
 
             // create window and GL context
-            window = SDL_CreateWindow("open.gl", 100, 100, 800, 600,
+            window = SDL_CreateWindow("opengl", 100, 100, 800, 600,
                     SDL_WINDOW_OPENGL);
             context = SDL_GL_CreateContext(window);
 
