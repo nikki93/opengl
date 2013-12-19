@@ -43,36 +43,6 @@ class Test
     public:
         void start()
         {
-            // arrays
-            static float vertices[] {
-                //  x      y      r     g     b      s     t
-                 0.5f,  0.5f,  0.8f, 0.5f, 0.1f,  1.0f, 1.0f,
-                 0.5f, -0.5f,  1.0f, 0.0f, 0.0f,  1.0f, 0.0f,
-                -0.5f, -0.5f,  0.0f, 1.0f, 0.0f,  0.0f, 0.0f,
-                -0.5f,  0.5f,  0.0f, 0.0f, 1.0f,  0.0f, 1.0f,
-            };
-
-            static GLuint elements[] {
-                0, 1, 2,
-                2, 3, 0,
-            };
-
-            // make vao
-            glGenVertexArrays(1, &vao);
-            glBindVertexArray(vao);
-
-            // make vbo
-            glGenBuffers(1, &vbo);
-            glBindBuffer(GL_ARRAY_BUFFER, vbo);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices,
-                    GL_STATIC_DRAW);
-
-            // make ebo
-            glGenBuffers(1, &ebo);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements,
-                    GL_STATIC_DRAW);
-
             // compile shaders
             vertexShader = glCreateShader(GL_VERTEX_SHADER);
             compileShader(vertexShader, "basic.vert");
@@ -87,27 +57,72 @@ class Test
             glLinkProgram(program);
             glUseProgram(program);
 
-            // bind position attribute
-            GLint posAttrib = glGetAttribLocation(program, "position");
-            glEnableVertexAttribArray(posAttrib);
-            glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE,
-                    7 * sizeof(float), 0);
-
-            // bind color attribute
+            // get attribute locations
+            GLint vertAttrib = glGetAttribLocation(program, "vertex");
             GLint colAttrib = glGetAttribLocation(program, "color");
-            glEnableVertexAttribArray(colAttrib);
+            GLint texAttrib = glGetAttribLocation(program, "texcoord");
+            GLint posAttrib = glGetAttribLocation(program, "position");
+
+            // arrays
+
+            static float vertices[] {
+                //  x      y      r     g     b      s     t
+                 0.5f,  0.5f,  0.8f, 0.5f, 0.1f,  1.0f, 1.0f,
+                 0.5f, -0.5f,  1.0f, 0.0f, 0.0f,  1.0f, 0.0f,
+                -0.5f, -0.5f,  0.0f, 1.0f, 0.0f,  0.0f, 0.0f,
+                -0.5f,  0.5f,  0.0f, 0.0f, 1.0f,  0.0f, 1.0f,
+            };
+
+            static GLuint elements[] {
+                0, 1, 2,
+                2, 3, 0,
+            };
+
+            static float positions[] {
+                //  x      y
+                 0.0f,  0.0f,
+                 2.0f,  0.0f,
+                 0.0f,  5.0f,
+                -1.0f, -3.0f,
+            };
+
+
+            // make vao
+            glGenVertexArrays(1, &vao);
+            glBindVertexArray(vao);
+
+            // make vbo, bind vbo attributes
+            glGenBuffers(1, &vbo);
+            glBindBuffer(GL_ARRAY_BUFFER, vbo);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices,
+                    GL_STATIC_DRAW);
+            glVertexAttribPointer(vertAttrib, 2, GL_FLOAT, GL_FALSE,
+                    7 * sizeof(float), 0);
+            glEnableVertexAttribArray(vertAttrib);
             glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE,
                     7 * sizeof(float), (void *) (2 * sizeof(float)));
-
-            // bind texcoord attribute
-            GLint texAttrib = glGetAttribLocation(program, "texcoord");
-            glEnableVertexAttribArray(texAttrib);
+            glEnableVertexAttribArray(colAttrib);
             glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE,
                     7 * sizeof(float), (void *) (5 * sizeof(float)));
+            glEnableVertexAttribArray(texAttrib);
 
-            // make textures
+            // make ibo, bind ibo attributes
+            glGenBuffers(1, &ibo);
+            glBindBuffer(GL_ARRAY_BUFFER, ibo);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(positions), positions,
+                    GL_STATIC_DRAW);
+            glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+            glEnableVertexAttribArray(posAttrib);
+            glVertexAttribDivisor(posAttrib, 1);
+
+            // make ebo
+            glGenBuffers(1, &ebo);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements,
+                    GL_STATIC_DRAW);
+
+            // set texture
             glGenTextures(1, tex);
-
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, tex[0]);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -134,12 +149,13 @@ class Test
 
         void draw()
         {
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+            glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, 4);
         }
 
     private:
         GLuint vao;
         GLuint vbo;
+        GLuint ibo;
         GLuint ebo;
 
         GLuint tex[1];
