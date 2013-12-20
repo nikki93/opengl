@@ -49,54 +49,102 @@ inline void bufferData(GLenum target, const std::vector<T> &v, GLenum usage)
 
 // ----------------------------------------------------------------------------
 
+#define poffsetof(type, field) \
+    ((void *) (&((type *) 0)->field))
+
+struct Vec2
+{
+    float x;
+    float y;
+};
+
+struct Sprite
+{
+    Vec2 position;  // world position to draw at
+    Vec2 cell;      // u, v offset in atlas
+    Vec2 size;      // u, v rectangle size in atlas
+    Vec2 velocity;  // it moves!
+
+    static void bindAttributes(GLuint position_, GLuint cell_, GLuint size_,
+            GLuint divisor = 1)
+    {
+        glVertexAttribPointer(position_, 2, GL_FLOAT, GL_FALSE,
+                sizeof(Sprite), poffsetof(Sprite, position));
+        glEnableVertexAttribArray(position_);
+        glVertexAttribDivisor(position_, divisor);
+
+        glVertexAttribPointer(cell_, 2, GL_FLOAT, GL_FALSE,
+                sizeof(Sprite), poffsetof(Sprite, cell));
+        glEnableVertexAttribArray(cell_);
+        glVertexAttribDivisor(cell_, divisor);
+
+        glVertexAttribPointer(size_, 2, GL_FLOAT, GL_FALSE,
+                sizeof(Sprite), poffsetof(Sprite, size));
+        glEnableVertexAttribArray(size_);
+        glVertexAttribDivisor(size_, divisor);
+    }
+};
+
+// ideally you would load this from some sort of tilesheet file
+Vec2 playerCell {  0.0f, 32.0f };
+Vec2 playerSize { 32.0f, 32.0f };
+Vec2 blockCell  { 32.0f, 32.0f };
+Vec2 blockSize  { 32.0f, 32.0f };
+
 class Test
 {
-    const unsigned int num_sprites = 100000;   // put a big number here!
+    private:
 
     public:
+        // add a bunch of random sprites for quick testing
+        void addRandomSprites(int n)
+        {
+            std::random_device rd;
+            std::mt19937 rng(rd());
+            std::uniform_real_distribution<float> dist(-1, 1);
+
+            for (int i = 0; i < n; ++i)
+            {
+                // pick a random position, atlas cell, velocity
+                Sprite sprite {
+                    Vec2 { 11.0f * dist(rng), 8.0f * dist(rng) },
+                    dist(rng) < 0.5f ? playerCell : blockCell,
+                    playerSize,
+                    Vec2 { 2.0f * dist(rng), 2.0f * dist(rng) }
+                };
+
+                sprites.push_back(sprite);
+            }
+        }
+
         void start()
         {
             // common quad mesh
             quadVertices = {
                 0.5f,  0.5f,
                 0.5f, -0.5f,
-               -0.5f, -0.5f,
-               -0.5f,  0.5f,
+                -0.5f, -0.5f,
+                -0.5f,  0.5f,
             };
             quadElements = {
                 0, 1, 2,
                 2, 3, 0,
             };
 
-            // sprite data -- each row must have x, y position, atlas cell
-            // u, v position and u, v size in atlas
+            // sprite data -- see 'struct Sprite' definition above for details
+            sprites = {
+                Sprite {
+                    Vec2 {  0.0f,  0.0f },
+                    playerCell, playerSize,
+                    Vec2 {  0.0f,  1.0f },
+                },
 
-            std::random_device rd;
-            std::mt19937 rng(rd());
-            rng.seed(42);
-            std::uniform_real_distribution<> dist(-1, 1);
-
-            for (int i = 0; i < num_sprites; ++i)
-            {
-                // choose random position, atlas cell -- sprite size is always
-                // 0.5 x 0.5 size (in uv)
-
-                float x = 11 * dist(rng), y = 8 * dist(rng),
-                      cx = dist(rng) < 0.5 ? 0.0f : 0.5f, cy = 0.5f,
-                      sx = 0.5f, sy = 0.5f;
-
-                if (dist(rng) < 0.5)
-                {
-                    cx += 0.5f;
-                    sx *= -1.f;
-                }
-
-                sprites.insert(sprites.end(), { x, y, cx, cy, sx, sy });
-
-                // also velocity
-                velocities.push_back(std::make_pair(2 * dist(rng),
-                            2 * dist(rng)));
-            }
+                Sprite {
+                    Vec2 {  2.0f,  0.0f },
+                    blockCell, blockSize,
+                    Vec2 {  0.0f,  0.0f },
+                },
+            };
 
             // compile shaders
             vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -112,46 +160,34 @@ class Test
             glLinkProgram(program);
             glUseProgram(program);
 
-            // get attribute locations
-            GLint vertAttrib = glGetAttribLocation(program, "vertex");
-            GLint posAttrib = glGetAttribLocation(program, "position");
-            GLint cellAttrib = glGetAttribLocation(program, "cell");
-            GLint sizeAttrib = glGetAttribLocation(program, "size");
-
             // make vao
             glGenVertexArrays(1, &vao);
             glBindVertexArray(vao);
 
-            // make vbo, bind vbo attributes
+            // make vbo and bind attributes for quad
             glGenBuffers(1, &vbo);
             glBindBuffer(GL_ARRAY_BUFFER, vbo);
             bufferData(GL_ARRAY_BUFFER, quadVertices, GL_STATIC_DRAW);
+            GLint vertAttrib = glGetAttribLocation(program, "vertex");
             glVertexAttribPointer(vertAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
             glEnableVertexAttribArray(vertAttrib);
 
-            // make ibo, bind ibo attributes
-            glGenBuffers(1, &ibo);
-            glBindBuffer(GL_ARRAY_BUFFER, ibo);
-            bufferData(GL_ARRAY_BUFFER, sprites, GL_DYNAMIC_DRAW);
-            glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE,
-                    6 * sizeof(float), 0);
-            glEnableVertexAttribArray(posAttrib);
-            glVertexAttribDivisor(posAttrib, 1);
-            glVertexAttribPointer(cellAttrib, 2, GL_FLOAT, GL_FALSE,
-                    6 * sizeof(float), (void *) (2 * sizeof(float)));
-            glEnableVertexAttribArray(cellAttrib);
-            glVertexAttribDivisor(cellAttrib, 1);
-            glVertexAttribPointer(sizeAttrib, 2, GL_FLOAT, GL_FALSE,
-                    6 * sizeof(float), (void *) (4 * sizeof(float)));
-            glEnableVertexAttribArray(sizeAttrib);
-            glVertexAttribDivisor(sizeAttrib, 1);
-
-            // make ebo
+            // make ebo for quad
             glGenBuffers(1, &ebo);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
             bufferData(GL_ELEMENT_ARRAY_BUFFER, quadElements, GL_STATIC_DRAW);
 
-            // set texture
+            // make ibo and bind ibo attributes for sprites
+            glGenBuffers(1, &ibo);
+            glBindBuffer(GL_ARRAY_BUFFER, ibo);
+            bufferData(GL_ARRAY_BUFFER, sprites, GL_DYNAMIC_DRAW);
+            Sprite::bindAttributes(
+                    glGetAttribLocation(program, "position"),
+                    glGetAttribLocation(program, "cell"),
+                    glGetAttribLocation(program, "size")
+                    );
+
+            // load and use atlas texture
             glGenTextures(1, tex);
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, tex[0]);
@@ -164,6 +200,8 @@ class Test
                     0, GL_BGRA, GL_UNSIGNED_BYTE, FreeImage_GetBits(img));
             FreeImage_Unload(img);
             glUniform1i(glGetUniformLocation(program, "tex0"), 0);
+            glUniform2f(glGetUniformLocation(program, "atlasSize"),
+                    FreeImage_GetWidth(img), FreeImage_GetHeight(img));
         }
 
         void stop()
@@ -180,16 +218,20 @@ class Test
 
         void update(float dt)
         {
-            // move 'em around a little bit
-            for (int i = 0; i < num_sprites; ++i)
-            {
-                sprites[6 * i]     += velocities[i].first * dt;
-                sprites[6 * i + 1] += velocities[i].second * dt;
+            static double inc = 0;
+            inc += 0.008;
+            addRandomSprites(inc);
 
-                if (abs(sprites[6 * i]) > 12)
-                    sprites[6 * i] = 0;
-                if (abs(sprites[6 * i + 1]) > 9)
-                    sprites[6 * i + 1] = 0;
+            // move 'em around a little bit
+            for (int i = 0; i < sprites.size(); ++i)
+            {
+                sprites[i].position.x += sprites[i].velocity.x * dt;
+                sprites[i].position.y += sprites[i].velocity.y * dt;
+
+                if (abs(sprites[i].position.x) > 12)
+                    sprites[i].position.x = 0;
+                if (abs(sprites[i].position.y) > 9)
+                    sprites[i].position.y = 0;
             }
         }
 
@@ -198,10 +240,9 @@ class Test
             glBindBuffer(GL_ARRAY_BUFFER, ibo);
             bufferData(GL_ARRAY_BUFFER, sprites, GL_DYNAMIC_DRAW);
             glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0,
-                    num_sprites);
+                    sprites.size());
         }
 
-    private:
         GLuint vao;
         GLuint vbo;
         GLuint ibo;
@@ -209,7 +250,7 @@ class Test
 
         std::vector<float> quadVertices;
         std::vector<GLuint> quadElements;
-        std::vector<float> sprites;
+        std::vector<Sprite> sprites;
 
         std::vector<std::pair<float, float>> velocities;
 
@@ -289,7 +330,7 @@ class Game
                 {
                     LOG << "fps: " << (((float) frames) /
                             std::chrono::duration<float>(ticks - fps).count())
-                        << std::endl;
+                        << ", " << test_.sprites.size() << " sprites" << std::endl;
                     fps = std::chrono::system_clock::now();
                     frames = 0;
                 }
