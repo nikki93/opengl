@@ -49,6 +49,7 @@ inline void bufferData(GLenum target, const std::vector<T> &v, GLenum usage)
 
 // ----------------------------------------------------------------------------
 
+// get pointer offset of 'field' in struct 'type'
 #define poffsetof(type, field) \
     ((void *) (&((type *) 0)->field))
 
