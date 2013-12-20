@@ -93,8 +93,6 @@ Vec2 blockSize  { 32.0f, 32.0f };
 
 class Test
 {
-    private:
-
     public:
         // add a bunch of random sprites for quick testing
         void addRandomSprites(int n)
