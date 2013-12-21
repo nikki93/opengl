@@ -118,18 +118,6 @@ class Test
 
         void start()
         {
-            // common quad mesh
-            quadVertices = {
-                0.5f,  0.5f,
-                0.5f, -0.5f,
-                -0.5f, -0.5f,
-                -0.5f,  0.5f,
-            };
-            quadElements = {
-                0, 1, 2,
-                2, 3, 0,
-            };
-
             // sprite data -- see 'struct Sprite' definition above for details
             sprites = {
                 Sprite {
@@ -148,12 +136,15 @@ class Test
             // compile shaders
             vertexShader = glCreateShader(GL_VERTEX_SHADER);
             compileShader(vertexShader, "basic.vert");
+            geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
+            compileShader(geometryShader, "basic.geom");
             fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
             compileShader(fragmentShader, "basic.frag");
 
             // link program
             program = glCreateProgram();
             glAttachShader(program, vertexShader);
+            glAttachShader(program, geometryShader);
             glAttachShader(program, fragmentShader);
             glBindFragDataLocation(program, 0, "outColor");
             glLinkProgram(program);
@@ -163,28 +154,15 @@ class Test
             glGenVertexArrays(1, &vao);
             glBindVertexArray(vao);
 
-            // make vbo and bind attributes for quad
-            glGenBuffers(1, &vbo);
-            glBindBuffer(GL_ARRAY_BUFFER, vbo);
-            bufferData(GL_ARRAY_BUFFER, quadVertices, GL_STATIC_DRAW);
-            GLint vertAttrib = glGetAttribLocation(program, "vertex");
-            glVertexAttribPointer(vertAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
-            glEnableVertexAttribArray(vertAttrib);
-
-            // make ebo for quad
-            glGenBuffers(1, &ebo);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-            bufferData(GL_ELEMENT_ARRAY_BUFFER, quadElements, GL_STATIC_DRAW);
-
             // make ibo and bind ibo attributes for sprites
             glGenBuffers(1, &ibo);
             glBindBuffer(GL_ARRAY_BUFFER, ibo);
-            bufferData(GL_ARRAY_BUFFER, sprites, GL_DYNAMIC_DRAW);
+            bufferData(GL_ARRAY_BUFFER, sprites, GL_STREAM_DRAW);
             Sprite::bindAttributes(
                     glGetAttribLocation(program, "position"),
                     glGetAttribLocation(program, "cell"),
-                    glGetAttribLocation(program, "size")
-                    );
+                    glGetAttribLocation(program, "size"),
+                    0);
 
             // load and use atlas texture
             glGenTextures(1, tex);
@@ -209,9 +187,7 @@ class Test
             glDeleteProgram(program);
             glDeleteShader(fragmentShader);
             glDeleteShader(vertexShader);
-            glDeleteBuffers(1, &ebo);
             glDeleteBuffers(1, &ibo);
-            glDeleteBuffers(1, &vbo);
             glDeleteVertexArrays(1, &vao);
         }
 
@@ -237,18 +213,13 @@ class Test
         void draw()
         {
             glBindBuffer(GL_ARRAY_BUFFER, ibo);
-            bufferData(GL_ARRAY_BUFFER, sprites, GL_DYNAMIC_DRAW);
-            glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0,
-                    sprites.size());
+            bufferData(GL_ARRAY_BUFFER, sprites, GL_STREAM_DRAW);
+            glDrawArrays(GL_POINTS, 0, sprites.size());
         }
 
-        GLuint vao;
-        GLuint vbo;
         GLuint ibo;
-        GLuint ebo;
+        GLuint vao;
 
-        std::vector<float> quadVertices;
-        std::vector<GLuint> quadElements;
         std::vector<Sprite> sprites;
 
         std::vector<std::pair<float, float>> velocities;
@@ -256,6 +227,7 @@ class Test
         GLuint tex[1];
 
         GLuint vertexShader;
+        GLuint geometryShader;
         GLuint fragmentShader;
         GLuint program;
 };
