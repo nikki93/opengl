@@ -329,7 +329,8 @@ class Game
                 {
                     LOG << "fps: " << (((float) frames) /
                             std::chrono::duration<float>(ticks - fps).count())
-                        << ", " << test_.sprites.size() << " sprites" << std::endl;
+                        << ", " << test_.sprites.size() << " sprites"
+                        << std::endl;
                     fps = std::chrono::system_clock::now();
                     frames = 0;
                 }
